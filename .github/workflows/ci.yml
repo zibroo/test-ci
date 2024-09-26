@@ -1,0 +1,131 @@
+name: Integration
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  push:
+    branches: ["prod"]
+  pull_request:
+    branches: ["prod"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+env:
+  ENVIRONMENT: prod
+  AWS_REGION: us-east-1
+  APPLICATION_NAME: bookapp
+  APPLICATION_NAMESPACE: default
+  CD_DESTINATION_OWNER: zibroo
+  CD_PROJECT: test-cd
+
+jobs:
+  get_inputs:
+    outputs:
+      sha8: ${{ steps.slug.outputs.sha8 }}
+    runs-on: self-hosted
+    steps:
+      - name: Get short SHA
+        id: slug
+        run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
+      
+  build_images_and_push:
+    needs: [get_inputs]
+    runs-on: self-hosted
+    outputs:
+      registry: ${{ steps.login-ecr.outputs.registry }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: "false"
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build books image and push to ECR
+        env:
+          SHA8: ${{ needs.get_inputs.outputs.sha8 }}
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          COMPONENT_NAME: "books"
+        run: |
+          docker build -f .devops/docker/$COMPONENT_NAME.dockerfile -t $REGISTRY/$ENVIRONMENT/$COMPONENT_NAME:$SHA8 src/$COMPONENT_NAME/
+          docker push $REGISTRY/$ENVIRONMENT/$COMPONENT_NAME:$SHA8
+
+  k8s_manifest_storing:
+    needs: [build_images_and_push, get_inputs]
+    runs-on: self-hosted
+    container:
+      image: alpine/helm:latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install AWS CLI
+        run: apk add --no-cache python3 py3-pip && pip3 install awscli
+
+      - name: Fetch config values from AWS SSM
+        id: fetch_ssm_params
+        run: |
+          POSTGRES_USER=$(aws ssm get-parameter --name "/$ENVIRONMENT/rds/username" --with-decryption --query "Parameter.Value" --output text)
+          POSTGRES_PASSWORD=$(aws ssm get-parameter --name "/$ENVIRONMENT/rds/password" --with-decryption --query "Parameter.Value" --output text)
+          POSTGRES_DB=$(aws ssm get-parameter --name "/$ENVIRONMENT/rds/db_name" --with-decryption --query "Parameter.Value" --output text)
+          POSTGRES_HOST=$(aws ssm get-parameter --name "/$ENVIRONMENT/rds/endpoint" --with-decryption --query "Parameter.Value" --output text)
+          REDIS_HOST=$(aws ssm get-parameter --name "/$ENVIRONMENT/redis/endpoint" --with-decryption --query "Parameter.Value" --output text)
+          RABBITMQ_HOST=$(aws ssm get-parameter --name "/$ENVIRONMENT/rabbitmq/endpoint" --with-decryption --query "Parameter.Value" --output text)
+          RABBITMQ_USERNAME=$(aws ssm get-parameter --name "/$ENVIRONMENT/rabbitmq/username" --with-decryption --query "Parameter.Value" --output text)
+          RABBITMQ_PASSWORD=$(aws ssm get-parameter --name "/$ENVIRONMENT/rabbitmq/password" --with-decryption --query "Parameter.Value" --output text)
+          SECRET_KEY=$(openssl rand -hex 32)
+
+          echo "::set-output name=POSTGRES_USER::$POSTGRES_USER"
+          echo "::set-output name=POSTGRES_PASSWORD::$POSTGRES_PASSWORD"
+          echo "::set-output name=POSTGRES_DB::$POSTGRES_DB"
+          echo "::set-output name=POSTGRES_HOST::$POSTGRES_HOST"
+          echo "::set-output name=SECRET_KEY::$SECRET_KEY"
+          echo "::set-output name=REDIS_HOST::$REDIS_HOST"
+          echo "::set-output name=RABBITMQ_HOST::$RABBITMQ_HOST"
+          echo "::set-output name=RABBITMQ_USERNAME::$RABBITMQ_USERNAME"
+          echo "::set-output name=RABBITMQ_PASSWORD::$RABBITMQ_PASSWORD"
+
+      - name: deploy to k8s
+        env:
+          REGISTRY: ${{ needs.build_images_and_push.outputs.registry }}
+          SHA8: ${{ needs.get_inputs.outputs.sha8 }}
+          POSTGRES_USER: ${{ steps.fetch_ssm_params.outputs.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ steps.fetch_ssm_params.outputs.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ steps.fetch_ssm_params.outputs.POSTGRES_DB }}
+          POSTGRES_HOST: ${{ steps.fetch_ssm_params.outputs.POSTGRES_HOST }}
+          POSTGRES_PORT: ${{ steps.fetch_ssm_params.outputs.POSTGRES_PORT }}
+          SECRET_KEY: ${{ steps.fetch_ssm_params.outputs.SECRET_KEY }}
+          REDIS_HOST: ${{ steps.fetch_ssm_params.outputs.REDIS_HOST }}
+          RABBITMQ_HOST: ${{ steps.fetch_ssm_params.outputs.RABBITMQ_HOST }}
+          RABBITMQ_USERNAME: ${{ steps.fetch_ssm_params.outputs.RABBITMQ_USERNAME }}
+          RABBITMQ_PASSWORD: ${{ steps.fetch_ssm_params.outputs.RABBITMQ_PASSWORD }}
+        run: |
+          rm -rf manifest
+          helm template $APPLICATION_NAME .devops/helm/books -f .devops/helm/books/values.yaml  --create-namespace -n $APPLICATION_NAMESPACE --output-dir manifest \
+            --set image.repository=$REGISTRY/$ENVIRONMENT/books \
+            --set image.tag=$SHA8 \
+            --set configmapData.POSTGRES_USER=$POSTGRES_USER \
+            --set configmapData.POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
+            --set configmapData.POSTGRES_DB=$POSTGRES_DB \
+            --set configmapData.POSTGRES_HOST=$POSTGRES_HOST \
+            --set configmapData.SECRET_KEY=$SECRET_KEY \
+            --set configmapData.REDIS_HOST=$REDIS_HOST \
+            --set configmapData.RABBITMQ_HOST=$RABBITMQ_HOST \
+            --set configmapData.RABBITMQ_USERNAME=$RABBITMQ_USERNAME \
+            --set configmapData.RABBITMQ_PASSWORD=$RABBITMQ_PASSWORD
+
+      - name: Pushes to another repository
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+          CD_DESTINATION: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          source-directory: "manifest"
+          target-directory: "bookapp/charts/books"
+          destination-github-username: ${{ env.CD_DESTINATION_OWNER }}
+          destination-repository-name: ${{ env.CD_PROJECT }}
+          target-branch: ${{ env.ENVIRONMENT }}
