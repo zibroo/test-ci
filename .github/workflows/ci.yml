@@ -19,6 +19,7 @@ env:
   CD_DESTINATION_OWNER: zibroo
   CD_PROJECT: test-cd
 
+
 jobs:
   get_inputs:
     outputs:
