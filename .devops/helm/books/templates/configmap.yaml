@@ -5,7 +5,7 @@ metadata:
   labels:
     {{- include "books.labels" . | nindent 4 }}
 data:
-  .env |
+  .env: |
     POSTGRES_USER={{ .Values.configmapData.POSTGRES_USER }}
     POSTGRES_PASSWORD={{ .Values.configmapData.POSTGRES_PASSWORD }}
     POSTGRES_DB={{ .Values.configmapData.POSTGRES_DB }}
