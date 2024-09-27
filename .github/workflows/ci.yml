@@ -75,7 +75,6 @@ jobs:
           unzip awscliv2.zip
           sudo ./aws/install
 
-
       - name: Fetch config values from AWS SSM
         id: fetch_ssm_params
         run: |
