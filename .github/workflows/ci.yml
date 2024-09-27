@@ -139,7 +139,7 @@ jobs:
           API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
         with:
           source-directory: "manifest"
-          target-directory: "bookapp/charts/books"
+          target-directory: "bookapp/"
           destination-github-username: ${{ env.CD_DESTINATION_OWNER }}
           destination-repository-name: ${{ env.CD_PROJECT }}
           target-branch: ${{ env.ENVIRONMENT }}
