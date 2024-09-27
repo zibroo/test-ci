@@ -68,6 +68,10 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           mask-aws-account-id: "false"
 
+      - name: AWS CLI Command
+        uses: nicholasarvelo/aws-cli-commands@v1
+
+
       - name: Fetch config values from AWS SSM
         id: fetch_ssm_params
         run: |
