@@ -66,11 +66,12 @@ jobs:
 
       - name: Install AWS CLI
         uses: imehedi/actions-awscli-v2@latest
+        args: aws ssm get-parameter --name '/prod/rds/username'
+
 
       - name: Fetch config values from AWS SSM
         id: fetch_ssm_params
         run: |
-          aws ssm get-parameter --name '/prod/rds/username'
           POSTGRES_USER=$(aws ssm get-parameter --name "/$ENVIRONMENT/rds/username" --with-decryption --query "Parameter.Value" --output text)
           POSTGRES_PASSWORD=$(aws ssm get-parameter --name "/$ENVIRONMENT/rds/password" --with-decryption --query "Parameter.Value" --output text)
           POSTGRES_DB=$(aws ssm get-parameter --name "/$ENVIRONMENT/rds/db_name" --with-decryption --query "Parameter.Value" --output text)
