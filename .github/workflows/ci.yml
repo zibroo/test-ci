@@ -63,10 +63,7 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@v4
-
-      - name: Install AWS CLI
-        run: apk add --no-cache python3 py3-pip && pip3 install awscli
-
+        
       - name: Fetch config values from AWS SSM
         id: fetch_ssm_params
         run: |
