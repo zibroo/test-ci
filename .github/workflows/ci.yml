@@ -84,9 +84,6 @@ jobs:
           POSTGRES_DB=$(aws ssm get-parameter --name "/$ENVIRONMENT/rds/db_name" --with-decryption --query "Parameter.Value" --output text)
           POSTGRES_HOST=$(aws ssm get-parameter --name "/$ENVIRONMENT/rds/endpoint" --with-decryption --query "Parameter.Value" --output text)
           REDIS_HOST=$(aws ssm get-parameter --name "/$ENVIRONMENT/redis/endpoint" --with-decryption --query "Parameter.Value" --output text)
-          RABBITMQ_HOST=$(aws ssm get-parameter --name "/$ENVIRONMENT/rabbitmq/endpoint" --with-decryption --query "Parameter.Value" --output text)
-          RABBITMQ_USERNAME=$(aws ssm get-parameter --name "/$ENVIRONMENT/rabbitmq/username" --with-decryption --query "Parameter.Value" --output text)
-          RABBITMQ_PASSWORD=$(aws ssm get-parameter --name "/$ENVIRONMENT/rabbitmq/password" --with-decryption --query "Parameter.Value" --output text)
           SECRET_KEY=$(openssl rand -hex 32)
 
           echo "::set-output name=POSTGRES_USER::$POSTGRES_USER"
