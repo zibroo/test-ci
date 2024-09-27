@@ -65,13 +65,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install AWS CLI
-        uses: actions/setup-python@v2
+        uses: unfor19/install-aws-cli-action@v1
         with:
-          python-version: '3.14'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install awscli
+          version: 2  
 
       - name: Fetch config values from AWS SSM
         id: fetch_ssm_params
