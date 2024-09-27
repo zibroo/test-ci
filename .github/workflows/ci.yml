@@ -55,6 +55,7 @@ jobs:
           docker push $REGISTRY/$ENVIRONMENT/$COMPONENT_NAME:$SHA8
  
 
+
   k8s_manifest_storing:
     needs: [build_images_and_push, get_inputs]
     runs-on: self-hosted
