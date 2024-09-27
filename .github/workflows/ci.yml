@@ -68,6 +68,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           mask-aws-account-id: "false"
 
+
       - name: Install AWS CLI v2
         run: |
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
