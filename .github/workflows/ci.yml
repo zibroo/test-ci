@@ -64,12 +64,6 @@ jobs:
       - name: Check out
         uses: actions/checkout@v4
 
-      - name: Install AWS CLI
-        uses: imehedi/actions-awscli-v2@latest
-        with:
-          args: aws ssm get-parameter --name '/prod/rds/username'
-
-
       - name: Fetch config values from AWS SSM
         id: fetch_ssm_params
         run: |
