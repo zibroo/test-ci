@@ -29,30 +29,30 @@ jobs:
         id: slug
         run: echo "sha8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_OUTPUT
       
-  # build_images_and_push:
-  #   needs: [get_inputs]
-  #   runs-on: self-hosted
-  #   outputs:
-  #     registry: ${{ steps.login-ecr.outputs.registry }}
-  #   steps:
-  #     - name: Check out
-  #       uses: actions/checkout@v4
-  #     - name: Configure AWS credentials
-  #       uses: aws-actions/configure-aws-credentials@v4
-  #       with:
-  #         aws-region: ${{ env.AWS_REGION }}
-  #         mask-aws-account-id: "false"
-  #     - name: Login to Amazon ECR
-  #       id: login-ecr
-  #       uses: aws-actions/amazon-ecr-login@v2
-  #     - name: Build books image and push to ECR
-  #       env:
-  #         SHA8: ${{ needs.get_inputs.outputs.sha8 }}
-  #         REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-  #         COMPONENT_NAME: "books"
-  #       run: |
-  #         docker build -f .devops/docker/$COMPONENT_NAME.dockerfile -t $REGISTRY/$ENVIRONMENT/$COMPONENT_NAME:$SHA8 src/$COMPONENT_NAME/
-  #         docker push $REGISTRY/$ENVIRONMENT/$COMPONENT_NAME:$SHA8
+  build_images_and_push:
+    needs: [get_inputs]
+    runs-on: self-hosted
+    outputs:
+      registry: ${{ steps.login-ecr.outputs.registry }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: "false"
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build books image and push to ECR
+        env:
+          SHA8: ${{ needs.get_inputs.outputs.sha8 }}
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          COMPONENT_NAME: "books"
+        run: |
+          docker build -f .devops/docker/$COMPONENT_NAME.dockerfile -t $REGISTRY/$ENVIRONMENT/$COMPONENT_NAME:$SHA8 src/$COMPONENT_NAME/
+          docker push $REGISTRY/$ENVIRONMENT/$COMPONENT_NAME:$SHA8
 
 
   k8s_manifest_storing:
