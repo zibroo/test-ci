@@ -69,7 +69,7 @@ jobs:
           mask-aws-account-id: "false"
 
       - name: AWS CLI Command
-        uses: nicholasarvelo/aws-cli-commands@v1
+        uses: imehedi/actions-awscli-v2@latest
 
 
       - name: Fetch config values from AWS SSM
