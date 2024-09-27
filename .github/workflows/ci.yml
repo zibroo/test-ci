@@ -62,11 +62,11 @@ jobs:
       - name: Check out
         uses: actions/checkout@v4
 
-      # - name: Configure AWS credentials
-      #   uses: aws-actions/configure-aws-credentials@v4
-      #   with:
-      #     aws-region: ${{ env.AWS_REGION }}
-      #     mask-aws-account-id: "false"
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: "false"
 
       - name: Fetch config values from AWS SSM
         id: fetch_ssm_params
