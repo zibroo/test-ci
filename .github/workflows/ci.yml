@@ -70,30 +70,27 @@ jobs:
 
       - name: AWS CLI Command
         uses: imehedi/actions-awscli-v2@latest
+        with:
+          args: |
+            POSTGRES_USER=$(aws ssm get-parameter --name "/$ENVIRONMENT/rds/username" --with-decryption --query "Parameter.Value" --output text)
+            POSTGRES_PASSWORD=$(aws ssm get-parameter --name "/$ENVIRONMENT/rds/password" --with-decryption --query "Parameter.Value" --output text)
+            POSTGRES_DB=$(aws ssm get-parameter --name "/$ENVIRONMENT/rds/db_name" --with-decryption --query "Parameter.Value" --output text)
+            POSTGRES_HOST=$(aws ssm get-parameter --name "/$ENVIRONMENT/rds/endpoint" --with-decryption --query "Parameter.Value" --output text)
+            REDIS_HOST=$(aws ssm get-parameter --name "/$ENVIRONMENT/redis/endpoint" --with-decryption --query "Parameter.Value" --output text)
+            RABBITMQ_HOST=$(aws ssm get-parameter --name "/$ENVIRONMENT/rabbitmq/endpoint" --with-decryption --query "Parameter.Value" --output text)
+            RABBITMQ_USERNAME=$(aws ssm get-parameter --name "/$ENVIRONMENT/rabbitmq/username" --with-decryption --query "Parameter.Value" --output text)
+            RABBITMQ_PASSWORD=$(aws ssm get-parameter --name "/$ENVIRONMENT/rabbitmq/password" --with-decryption --query "Parameter.Value" --output text)
+            SECRET_KEY=$(openssl rand -hex 32)
 
-
-      - name: Fetch config values from AWS SSM
-        id: fetch_ssm_params
-        run: |
-          POSTGRES_USER=$(aws ssm get-parameter --name "/$ENVIRONMENT/rds/username" --with-decryption --query "Parameter.Value" --output text)
-          POSTGRES_PASSWORD=$(aws ssm get-parameter --name "/$ENVIRONMENT/rds/password" --with-decryption --query "Parameter.Value" --output text)
-          POSTGRES_DB=$(aws ssm get-parameter --name "/$ENVIRONMENT/rds/db_name" --with-decryption --query "Parameter.Value" --output text)
-          POSTGRES_HOST=$(aws ssm get-parameter --name "/$ENVIRONMENT/rds/endpoint" --with-decryption --query "Parameter.Value" --output text)
-          REDIS_HOST=$(aws ssm get-parameter --name "/$ENVIRONMENT/redis/endpoint" --with-decryption --query "Parameter.Value" --output text)
-          RABBITMQ_HOST=$(aws ssm get-parameter --name "/$ENVIRONMENT/rabbitmq/endpoint" --with-decryption --query "Parameter.Value" --output text)
-          RABBITMQ_USERNAME=$(aws ssm get-parameter --name "/$ENVIRONMENT/rabbitmq/username" --with-decryption --query "Parameter.Value" --output text)
-          RABBITMQ_PASSWORD=$(aws ssm get-parameter --name "/$ENVIRONMENT/rabbitmq/password" --with-decryption --query "Parameter.Value" --output text)
-          SECRET_KEY=$(openssl rand -hex 32)
-
-          echo "::set-output name=POSTGRES_USER::$POSTGRES_USER"
-          echo "::set-output name=POSTGRES_PASSWORD::$POSTGRES_PASSWORD"
-          echo "::set-output name=POSTGRES_DB::$POSTGRES_DB"
-          echo "::set-output name=POSTGRES_HOST::$POSTGRES_HOST"
-          echo "::set-output name=SECRET_KEY::$SECRET_KEY"
-          echo "::set-output name=REDIS_HOST::$REDIS_HOST"
-          echo "::set-output name=RABBITMQ_HOST::$RABBITMQ_HOST"
-          echo "::set-output name=RABBITMQ_USERNAME::$RABBITMQ_USERNAME"
-          echo "::set-output name=RABBITMQ_PASSWORD::$RABBITMQ_PASSWORD"
+          # echo "::set-output name=POSTGRES_USER::$POSTGRES_USER"
+          # echo "::set-output name=POSTGRES_PASSWORD::$POSTGRES_PASSWORD"
+          # echo "::set-output name=POSTGRES_DB::$POSTGRES_DB"
+          # echo "::set-output name=POSTGRES_HOST::$POSTGRES_HOST"
+          # echo "::set-output name=SECRET_KEY::$SECRET_KEY"
+          # echo "::set-output name=REDIS_HOST::$REDIS_HOST"
+          # echo "::set-output name=RABBITMQ_HOST::$RABBITMQ_HOST"
+          # echo "::set-output name=RABBITMQ_USERNAME::$RABBITMQ_USERNAME"
+          # echo "::set-output name=RABBITMQ_PASSWORD::$RABBITMQ_PASSWORD"
 
       # - name: deploy to k8s
       #   env:
